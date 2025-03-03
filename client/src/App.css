@@ -108,6 +108,26 @@
   }
 }
 
+/* Frosted Glass Effect */
+.backdrop-blur-xl {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Logo Animation */
+@keyframes logoSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.logo:hover .logo-inner {
+  animation: logoSpin 1s ease-in-out;
+}
+
 /* Chat Container Styles */
 .chat-container::-webkit-scrollbar {
   width: 6px;
