@@ -36,8 +36,12 @@ export default function Home() {
         <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-rose-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent animate-title">
           TimePilot
         </h1>
-        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-8 animate-fade-in">
+        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-4 animate-fade-in">
           Your intelligent calendar assistant that understands natural language
+        </p>
+        <p className="text-base md:text-lg text-gray-400 max-w-xl mx-auto mb-8 animate-fade-in mt-8">
+          Just chat with TimePilot like you would with a human assistant - it
+          handles scheduling, conflicts, and calendar management automatically
         </p>
         <div className="flex gap-4 animate-fade-in-up">
           <button
@@ -47,7 +51,9 @@ export default function Home() {
             Explore Features
           </button>
           <button
-            onClick={() => document.querySelector('[data-page="chat"]')?.click()}
+            onClick={() =>
+              document.querySelector('[data-page="chat"]')?.click()
+            }
             className="px-8 py-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
           >
             Try Now
@@ -60,7 +66,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center p-6 rounded-xl bg-gray-800">
-              <div className="text-4xl font-bold text-violet-400 mb-2">100K+</div>
+              <div className="text-4xl font-bold text-violet-400 mb-2">
+                100K+
+              </div>
               <div className="text-gray-300">Active Users</div>
             </div>
             <div className="text-center p-6 rounded-xl bg-gray-800">
@@ -68,7 +76,9 @@ export default function Home() {
               <div className="text-gray-300">Events Managed</div>
             </div>
             <div className="text-center p-6 rounded-xl bg-gray-800">
-              <div className="text-4xl font-bold text-violet-400 mb-2">99.9%</div>
+              <div className="text-4xl font-bold text-violet-400 mb-2">
+                99.9%
+              </div>
               <div className="text-gray-300">Uptime</div>
             </div>
           </div>
@@ -119,7 +129,7 @@ export default function Home() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H18.75v-.008zm0 2.25h.008v.008H18.75V15zm0 2.25h.008v.008h-.008v-.008z"
+                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008H16.5V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H18.75v-.008zm0 2.25h.008v.008H18.75V15zm0 2.25h.008v.008h-.008v-.008z"
                   />
                 </svg>
               ),

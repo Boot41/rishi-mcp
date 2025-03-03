@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./App.css";
 import Home from "./pages/Home";
 import AIChat from "./pages/AIChat";
@@ -19,9 +20,11 @@ const Logo = () => (
   </div>
 );
 
-function App() {
+const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activePage, setActivePage] = useState("home");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname === "/" ? "home" : location.pathname.slice(1);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,7 +35,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white font-['Inter']">
+    <>
       {/* Navigation Bar */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
@@ -44,19 +47,19 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Logo />
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden md:flex items-center gap-2">
               <button
-                onClick={() => setActivePage("home")}
+                onClick={() => navigate("/")}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  activePage === "home" ? "bg-violet-600" : "hover:bg-gray-800"
+                  currentPath === "home" ? "bg-violet-600" : "hover:bg-gray-800"
                 }`}
               >
                 Home
               </button>
               <button
-                onClick={() => setActivePage("calendar")}
+                onClick={() => navigate("/calendar")}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  activePage === "calendar"
+                  currentPath === "calendar"
                     ? "bg-violet-600"
                     : "hover:bg-gray-800"
                 }`}
@@ -64,16 +67,16 @@ function App() {
                 Calendar
               </button>
               <button
-                onClick={() => setActivePage("chat")}
+                onClick={() => navigate("/chat")}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  activePage === "chat" ? "bg-violet-600" : "hover:bg-gray-800"
+                  currentPath === "chat" ? "bg-violet-600" : "hover:bg-gray-800"
                 }`}
               >
                 AI Chat
               </button>
             </div>
             <button
-              onClick={() => setActivePage("chat")}
+              onClick={() => navigate("/chat")}
               className="md:hidden px-4 py-2 bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
             >
               Try Now
@@ -86,9 +89,9 @@ function App() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 z-40">
         <div className="flex justify-around p-4">
           <button
-            onClick={() => setActivePage("home")}
+            onClick={() => navigate("/")}
             className={`p-2 rounded-lg transition-colors ${
-              activePage === "home" ? "text-violet-400" : "text-gray-400"
+              currentPath === "home" ? "text-violet-400" : "text-gray-400"
             }`}
           >
             <svg
@@ -107,9 +110,9 @@ function App() {
             </svg>
           </button>
           <button
-            onClick={() => setActivePage("calendar")}
+            onClick={() => navigate("/calendar")}
             className={`p-2 rounded-lg transition-colors ${
-              activePage === "calendar" ? "text-violet-400" : "text-gray-400"
+              currentPath === "calendar" ? "text-violet-400" : "text-gray-400"
             }`}
           >
             <svg
@@ -128,9 +131,9 @@ function App() {
             </svg>
           </button>
           <button
-            onClick={() => setActivePage("chat")}
+            onClick={() => navigate("/chat")}
             className={`p-2 rounded-lg transition-colors ${
-              activePage === "chat" ? "text-violet-400" : "text-gray-400"
+              currentPath === "chat" ? "text-violet-400" : "text-gray-400"
             }`}
           >
             <svg
@@ -150,16 +153,28 @@ function App() {
           </button>
         </div>
       </div>
+    </>
+  );
+};
 
-      {/* Main Content */}
-      <main className="min-h-screen pt-20">
-        <div className="max-w-7xl mx-auto p-6">
-          {activePage === "home" && <Home />}
-          {activePage === "calendar" && <Calendar />}
-          {activePage === "chat" && <AIChat />}
-        </div>
-      </main>
-    </div>
+function App() {
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-900 text-white font-['Inter']">
+        <Navigation />
+        
+        {/* Main Content */}
+        <main className="min-h-screen pt-20">
+          <div className="max-w-7xl mx-auto p-6">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/chat" element={<AIChat />} />
+            </Routes>
+          </div>
+        </main>
+      </div>
+    </Router>
   );
 }
 
