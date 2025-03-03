@@ -29,50 +29,74 @@ const startServer = async () => {
     }
 };
 // Chat endpoint
-app.post('/api/chat', async (req, res) => {
+app.post('/chat', async (req, res) => {
     try {
-        const { messages } = req.body;
+        const { message } = req.body;
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+        // Create messages array with system message
+        const messages = [
+            {
+                role: 'system',
+                content: 'You are a helpful calendar assistant that can manage calendar events. You can create, read, update, and delete events, as well as list events within a time range. You should also be able to answer general questions about calendar management without using any tools.'
+            },
+            {
+                role: 'user',
+                content: message
+            }
+        ];
         // Get response from Groq
         const llmResponse = await groqClient.chat(messages);
         // Check if there's an error
         if (llmResponse.error) {
-            return res.status(500).json(llmResponse);
+            return res.status(500).json({ error: llmResponse.error });
         }
         // Get the message from the choices
-        const message = llmResponse.choices[0].message;
+        const assistantMessage = llmResponse.choices[0].message;
         // If there are tool calls, execute them
-        if (message.tool_calls) {
+        if (assistantMessage.tool_calls) {
             const functionResults = [];
             // Execute all tool calls and collect results
-            for (const toolCall of message.tool_calls) {
+            for (const toolCall of assistantMessage.tool_calls) {
                 if (toolCall.type === 'function') {
                     const { name, arguments: args } = toolCall.function;
                     const parsedArgs = JSON.parse(args);
-                    let result;
-                    switch (name) {
-                        case 'create_event':
-                            result = await calendarClient.createEvent(parsedArgs);
-                            break;
-                        case 'get_event':
-                            result = await calendarClient.getEvent(parsedArgs.eventId);
-                            break;
-                        case 'update_event':
-                            result = await calendarClient.updateEvent(parsedArgs);
-                            break;
-                        case 'list_events':
-                            result = await calendarClient.listEvents(parsedArgs);
-                            break;
-                        case 'delete_event':
-                            result = await calendarClient.deleteEvent(parsedArgs.eventId);
-                            break;
-                        default:
-                            throw new Error(`Unknown function: ${name}`);
+                    try {
+                        // Execute the calendar function with proper type checking
+                        let result;
+                        switch (name) {
+                            case 'create_event':
+                                result = await calendarClient.createEvent(parsedArgs);
+                                break;
+                            case 'get_event':
+                                result = await calendarClient.getEvent(parsedArgs.eventId);
+                                break;
+                            case 'update_event':
+                                result = await calendarClient.updateEvent(parsedArgs);
+                                break;
+                            case 'delete_event':
+                                result = await calendarClient.deleteEvent(parsedArgs.eventId);
+                                break;
+                            case 'list_events':
+                                result = await calendarClient.listEvents(parsedArgs);
+                                break;
+                            default:
+                                throw new Error(`Unknown function: ${name}`);
+                        }
+                        functionResults.push({
+                            name,
+                            result,
+                            args: parsedArgs
+                        });
                     }
-                    functionResults.push({
-                        name,
-                        result,
-                        args: parsedArgs
-                    });
+                    catch (error) {
+                        functionResults.push({
+                            name,
+                            result: { error: error.message },
+                            args: parsedArgs
+                        });
+                    }
                 }
             }
             // Create a new message array for the second LLM call
@@ -80,7 +104,7 @@ app.post('/api/chat', async (req, res) => {
                 ...messages,
                 {
                     role: "assistant",
-                    content: message.content || "I'll help you with that calendar operation."
+                    content: assistantMessage.content || "I'll help you with that calendar operation."
                 },
                 {
                     role: "function",
@@ -89,14 +113,17 @@ app.post('/api/chat', async (req, res) => {
                 }
             ];
             // Get a human-friendly response from the LLM about the function results
-            const finalResponse = await groqClient.chat(secondCallMessages, false); // false means don't include tool definitions
+            const finalResponse = await groqClient.chat(secondCallMessages, false);
+            if (finalResponse.error) {
+                return res.status(500).json({ error: finalResponse.error });
+            }
             // Return both the function results and the human-friendly response
             return res.json({
                 function_results: functionResults,
                 response: finalResponse.choices[0].message.content
             });
         }
-        return res.json({ response: message.content });
+        return res.json({ response: assistantMessage.content });
     }
     catch (error) {
         console.error('Error in chat endpoint:', error);

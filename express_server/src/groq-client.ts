@@ -34,7 +34,14 @@ export class GroqClient {
         if (msg.role === "system") {
           return {
             ...msg,
-            content: `${msg.content}\nYou MUST use the create_event function to create calendar events. Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`,
+            content: `${msg.content}\nYou have access to the following calendar functions:
+1. create_event: Create a new calendar event
+2. get_event: Retrieve details of a specific event using its ID
+3. update_event: Update an existing event's details
+4. delete_event: Remove an event from the calendar
+5. list_events: Get events within a specified time range
+
+Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`,
           };
         }
         return msg;
@@ -46,7 +53,7 @@ export class GroqClient {
               type: "function",
               function: {
                 name: "create_event",
-                description: "Create a new calendar event",
+                description: "Creates a new event in Google Calendar",
                 parameters: {
                   type: "object",
                   properties: {
@@ -58,6 +65,10 @@ export class GroqClient {
                       type: "string",
                       description: "Description of the event",
                     },
+                    location: {
+                      type: "string",
+                      description: "Location of the event",
+                    },
                     start: {
                       type: "object",
                       properties: {
@@ -65,6 +76,10 @@ export class GroqClient {
                           type: "string",
                           description:
                             "Start time in ISO 8601 format with timezone (e.g., 2025-03-04T14:00:00+05:30)",
+                        },
+                        timeZone: {
+                          type: "string",
+                          description: "Time zone for the start time",
                         },
                       },
                       required: ["dateTime"],
@@ -77,11 +92,134 @@ export class GroqClient {
                           description:
                             "End time in ISO 8601 format with timezone (e.g., 2025-03-04T15:00:00+05:30)",
                         },
+                        timeZone: {
+                          type: "string",
+                          description: "Time zone for the end time",
+                        },
                       },
                       required: ["dateTime"],
                     },
                   },
                   required: ["summary", "start", "end"],
+                },
+              },
+            },
+            {
+              type: "function",
+              function: {
+                name: "get_event",
+                description: "Retrieves details of a specific event",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    eventId: {
+                      type: "string",
+                      description: "ID of the event to retrieve",
+                    },
+                  },
+                  required: ["eventId"],
+                },
+              },
+            },
+            {
+              type: "function",
+              function: {
+                name: "update_event",
+                description: "Updates an existing event",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    eventId: {
+                      type: "string",
+                      description: "ID of the event to update",
+                    },
+                    summary: {
+                      type: "string",
+                      description: "New event title",
+                    },
+                    description: {
+                      type: "string",
+                      description: "New event description",
+                    },
+                    location: {
+                      type: "string",
+                      description: "New event location",
+                    },
+                    start: {
+                      type: "object",
+                      properties: {
+                        dateTime: {
+                          type: "string",
+                          description: "New start time in ISO 8601 format with timezone",
+                        },
+                        timeZone: {
+                          type: "string",
+                          description: "Time zone for the start time",
+                        },
+                      },
+                    },
+                    end: {
+                      type: "object",
+                      properties: {
+                        dateTime: {
+                          type: "string",
+                          description: "New end time in ISO 8601 format with timezone",
+                        },
+                        timeZone: {
+                          type: "string",
+                          description: "Time zone for the end time",
+                        },
+                      },
+                    },
+                  },
+                  required: ["eventId"],
+                },
+              },
+            },
+            {
+              type: "function",
+              function: {
+                name: "delete_event",
+                description: "Deletes an event from the calendar",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    eventId: {
+                      type: "string",
+                      description: "ID of the event to delete",
+                    },
+                  },
+                  required: ["eventId"],
+                },
+              },
+            },
+            {
+              type: "function",
+              function: {
+                name: "list_events",
+                description: "Lists events within a specified time range",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    timeMin: {
+                      type: "string",
+                      description: "Start of time range in ISO 8601 format",
+                    },
+                    timeMax: {
+                      type: "string",
+                      description: "End of time range in ISO 8601 format",
+                    },
+                    maxResults: {
+                      type: "number",
+                      description: "Maximum number of events to return",
+                    },
+                    orderBy: {
+                      type: "string",
+                      enum: ["startTime", "updated"],
+                      description: "Sort order for events",
+                    },
+                  },
+                  required: ["timeMin", "timeMax"],
                 },
               },
             },
@@ -94,10 +232,7 @@ export class GroqClient {
           model: "llama-3.3-70b-versatile",
           messages: enhancedMessages,
           tools,
-          tool_choice: {
-            type: "function",
-            function: { name: "create_event" },
-          },
+          tool_choice: "auto",
           temperature: 0.1,
           max_tokens: 4096,
         },
