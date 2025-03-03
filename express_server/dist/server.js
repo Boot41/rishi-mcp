@@ -1,8 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { GroqClient } from './groq-client.js';
-import { CalendarClient } from './calendar-client.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { GroqClient } from "./groq-client.js";
+import { CalendarClient } from "./calendar-client.js";
+import calendarRoutes from "./routes/calendar.js";
 // Initialize environment variables
 dotenv.config();
 // Create Express app
@@ -10,13 +11,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 // Initialize clients
-const groqClient = new GroqClient(process.env.GROQ_API_KEY || '');
+const groqClient = new GroqClient(process.env.GROQ_API_KEY || "");
 const calendarClient = new CalendarClient();
 // Connect to MCP server when server starts
 const startServer = async () => {
     try {
         await calendarClient.connect();
-        console.log('Connected to MCP server');
+        console.log("Connected to MCP server");
         // Start server
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, () => {
@@ -24,27 +25,29 @@ const startServer = async () => {
         });
     }
     catch (error) {
-        console.error('Failed to connect to MCP server:', error);
+        console.error("Failed to connect to MCP server:", error);
         process.exit(1);
     }
 };
+// Calendar routes
+app.use("/calendar", calendarRoutes);
 // Chat endpoint
-app.post('/chat', async (req, res) => {
+app.post("/chat", async (req, res) => {
     try {
         const { message } = req.body;
         if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+            return res.status(400).json({ error: "Message is required" });
         }
         // Create messages array with system message
         const messages = [
             {
-                role: 'system',
-                content: 'You are a helpful calendar assistant that can manage calendar events. You can create, read, update, and delete events, as well as list events within a time range. You should also be able to answer general questions about calendar management without using any tools.'
+                role: "system",
+                content: "You are a helpful calendar assistant that can manage calendar events. You can create, read, update, and delete events, as well as list events within a time range. You should also be able to answer general questions about calendar management without using any tools.",
             },
             {
-                role: 'user',
-                content: message
-            }
+                role: "user",
+                content: message,
+            },
         ];
         // Get response from Groq
         const llmResponse = await groqClient.chat(messages);
@@ -59,26 +62,31 @@ app.post('/chat', async (req, res) => {
             const functionResults = [];
             // Execute all tool calls and collect results
             for (const toolCall of assistantMessage.tool_calls) {
-                if (toolCall.type === 'function') {
+                if (toolCall.type === "function") {
                     const { name, arguments: args } = toolCall.function;
                     const parsedArgs = JSON.parse(args);
                     try {
                         // Execute the calendar function with proper type checking
                         let result;
                         switch (name) {
-                            case 'create_event':
+                            case "create_event":
+                                console.log("create event called", parsedArgs);
                                 result = await calendarClient.createEvent(parsedArgs);
                                 break;
-                            case 'get_event':
+                            case "get_event":
+                                console.log("get event called", parsedArgs);
                                 result = await calendarClient.getEvent(parsedArgs.eventId);
                                 break;
-                            case 'update_event':
+                            case "update_event":
+                                console.log("update event called", parsedArgs);
                                 result = await calendarClient.updateEvent(parsedArgs);
                                 break;
-                            case 'delete_event':
+                            case "delete_event":
+                                console.log("delete event called", parsedArgs);
                                 result = await calendarClient.deleteEvent(parsedArgs.eventId);
                                 break;
-                            case 'list_events':
+                            case "list_events":
+                                console.log("list events called", parsedArgs);
                                 result = await calendarClient.listEvents(parsedArgs);
                                 break;
                             default:
@@ -87,14 +95,14 @@ app.post('/chat', async (req, res) => {
                         functionResults.push({
                             name,
                             result,
-                            args: parsedArgs
+                            args: parsedArgs,
                         });
                     }
                     catch (error) {
                         functionResults.push({
                             name,
                             result: { error: error.message },
-                            args: parsedArgs
+                            args: parsedArgs,
                         });
                     }
                 }
@@ -104,13 +112,14 @@ app.post('/chat', async (req, res) => {
                 ...messages,
                 {
                     role: "assistant",
-                    content: assistantMessage.content || "I'll help you with that calendar operation."
+                    content: assistantMessage.content ||
+                        "I'll help you with that calendar operation.",
                 },
                 {
                     role: "function",
                     content: JSON.stringify(functionResults, null, 2),
-                    name: "calendar_operation_results"
-                }
+                    name: "calendar_operation_results",
+                },
             ];
             // Get a human-friendly response from the LLM about the function results
             const finalResponse = await groqClient.chat(secondCallMessages, false);
@@ -120,13 +129,13 @@ app.post('/chat', async (req, res) => {
             // Return both the function results and the human-friendly response
             return res.json({
                 function_results: functionResults,
-                response: finalResponse.choices[0].message.content
+                response: finalResponse.choices[0].message.content,
             });
         }
         return res.json({ response: assistantMessage.content });
     }
     catch (error) {
-        console.error('Error in chat endpoint:', error);
+        console.error("Error in chat endpoint:", error);
         return res.status(500).json({ error: error.message });
     }
 });
