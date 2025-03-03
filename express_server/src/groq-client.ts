@@ -34,12 +34,17 @@ export class GroqClient {
         if (msg.role === "system") {
           return {
             ...msg,
-            content: `${msg.content}\nYou have access to the following calendar functions:
+            content: `${msg.content}\nThe current year is 2025. You have access to the following calendar functions:
 1. create_event: Create a new calendar event
 2. get_event: Retrieve details of a specific event using its ID
 3. update_event: Update an existing event's details
 4. delete_event: Remove an event from the calendar
 5. list_events: Get events within a specified time range
+
+When users want to update or delete events, they can describe them naturally (e.g., "delete my meeting tomorrow", "update the project review next week"). You should:
+1. First list matching events if multiple are found
+2. Ask for clarification if needed
+3. Use the event ID only when certain about which event to modify
 
 Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`,
           };
@@ -125,13 +130,19 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
               type: "function",
               function: {
                 name: "update_event",
-                description: "Updates an existing event",
+                description:
+                  "Updates an existing event. Can find events by description, date, or ID",
                 parameters: {
                   type: "object",
                   properties: {
                     eventId: {
                       type: "string",
-                      description: "ID of the event to update",
+                      description: "ID of the event to update (if known)",
+                    },
+                    query: {
+                      type: "string",
+                      description:
+                        "Natural language description of the event to update (e.g., 'team meeting', 'project review')",
                     },
                     summary: {
                       type: "string",
@@ -150,7 +161,8 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
                       properties: {
                         dateTime: {
                           type: "string",
-                          description: "New start time in ISO 8601 format with timezone",
+                          description:
+                            "New start time in ISO 8601 format with timezone",
                         },
                         timeZone: {
                           type: "string",
@@ -163,7 +175,8 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
                       properties: {
                         dateTime: {
                           type: "string",
-                          description: "New end time in ISO 8601 format with timezone",
+                          description:
+                            "New end time in ISO 8601 format with timezone",
                         },
                         timeZone: {
                           type: "string",
@@ -172,7 +185,14 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
                       },
                     },
                   },
-                  required: ["eventId"],
+                  anyOf: [
+                    {
+                      required: ["eventId"],
+                    },
+                    {
+                      required: ["query"],
+                    },
+                  ],
                 },
               },
             },
@@ -180,16 +200,29 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
               type: "function",
               function: {
                 name: "delete_event",
-                description: "Deletes an event from the calendar",
+                description:
+                  "Deletes an event from the calendar. Can find events by description, date, or ID",
                 parameters: {
                   type: "object",
                   properties: {
                     eventId: {
                       type: "string",
-                      description: "ID of the event to delete",
+                      description: "ID of the event to delete (if known)",
+                    },
+                    query: {
+                      type: "string",
+                      description:
+                        "Natural language description of the event (e.g., 'team meeting tomorrow', 'project review on March 26th')",
                     },
                   },
-                  required: ["eventId"],
+                  anyOf: [
+                    {
+                      required: ["eventId"],
+                    },
+                    {
+                      required: ["query"],
+                    },
+                  ],
                 },
               },
             },
@@ -229,7 +262,7 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
       const response = await axios.post(
         this.baseURL,
         {
-          model: "llama-3.3-70b-versatile",
+          model: "qwen-2.5-32b",
           messages: enhancedMessages,
           tools,
           tool_choice: "auto",

@@ -31,6 +31,29 @@ const startServer = async () => {
 };
 // Calendar routes
 app.use("/calendar", calendarRoutes);
+// Helper function to get events using query
+async function findEventsByQuery(query) {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    console.log("inside findEventsByQuery", query);
+    const response = await calendarClient.listEvents({
+        timeMin: now.toISOString(),
+        timeMax: thirtyDaysFromNow.toISOString(),
+        maxResults: 100,
+    });
+    const events = JSON.parse(response.content[0].text.substring(response.content[0].text.indexOf("[")));
+    console.log("events", events);
+    // Search by title, description, or date
+    return events.filter((event) => {
+        const eventDate = new Date(event.start.dateTime);
+        const searchLower = query.toLowerCase();
+        console.log("searchLower", searchLower);
+        console.log(event.summary.toLowerCase().includes(searchLower));
+        return (searchLower.includes(event.summary.toLowerCase()) ||
+            (event.description || "").toLowerCase().includes(searchLower) ||
+            eventDate.toLocaleDateString().includes(query));
+    });
+}
 // Chat endpoint
 app.post("/chat", async (req, res) => {
     try {
@@ -79,11 +102,41 @@ app.post("/chat", async (req, res) => {
                                 break;
                             case "update_event":
                                 console.log("update event called", parsedArgs);
-                                result = await calendarClient.updateEvent(parsedArgs);
+                                if (parsedArgs.eventId) {
+                                    console.log("update event by id called", parsedArgs);
+                                    result = await calendarClient.updateEvent(parsedArgs);
+                                }
+                                else if (parsedArgs.query) {
+                                    const events = await findEventsByQuery(parsedArgs.query);
+                                    if (events.length === 0) {
+                                        console.log("No events found");
+                                        result = "No events found";
+                                    }
+                                    else {
+                                        const updateParams = {
+                                            ...parsedArgs,
+                                            eventId: events[0].id,
+                                        };
+                                        delete updateParams.query;
+                                        console.log("update event by param called", updateParams);
+                                        result = await calendarClient.updateEvent(updateParams);
+                                    }
+                                }
                                 break;
                             case "delete_event":
                                 console.log("delete event called", parsedArgs);
-                                result = await calendarClient.deleteEvent(parsedArgs.eventId);
+                                if (parsedArgs.eventId) {
+                                    result = await calendarClient.deleteEvent(parsedArgs.eventId);
+                                }
+                                else if (parsedArgs.query) {
+                                    const events = await findEventsByQuery(parsedArgs.query);
+                                    if (events.length === 0) {
+                                        result = "No events found";
+                                    }
+                                    else {
+                                        result = await calendarClient.deleteEvent(events[0].id);
+                                    }
+                                }
                                 break;
                             case "list_events":
                                 console.log("list events called", parsedArgs);
