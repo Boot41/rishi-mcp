@@ -12,7 +12,8 @@ export class GroqClient {
                 if (msg.role === "system") {
                     return {
                         ...msg,
-                        content: `${msg.content}\nThe current year is 2025. You have access to the following calendar functions:
+                        content: includeTools
+                            ? `${msg.content}\nThe current year is 2025. You have access to the following calendar functions:
 1. create_event: Create a new calendar event
 2. get_event: Retrieve details of a specific event using its ID
 3. update_event: Update an existing event's details
@@ -24,7 +25,8 @@ When users want to update or delete events, they can describe them naturally (e.
 2. Ask for clarification if needed
 3. Use the event ID only when certain about which event to modify
 
-Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`,
+Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`
+                            : `${msg.content}\nThe current year is 2025. return the response in human readable format.`,
                     };
                 }
                 return msg;
