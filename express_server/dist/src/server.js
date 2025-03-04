@@ -62,8 +62,6 @@ app.get("/auth/google/callback", async (req, res) => {
             console.error("Error getting tokens:", tokens.error);
             return res.status(400).json({ error: "Failed to get tokens" });
         }
-        // Store the refresh token securely (you'll need to implement this)
-        // For now, we'll just log it
         console.log("Refresh token:", tokens.refresh_token);
         //Initialize/update calender client with the new token
         await initialiseCalendarClient(tokens.refresh_token);

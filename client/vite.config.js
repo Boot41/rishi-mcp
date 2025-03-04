@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/chat': 'http://localhost:3000'
+      '/chat': process.env.DOCKER === 'true' 
+        ? 'http://mcp-backend:3000'
+        : 'http://localhost:3000'
     }
   }
 });

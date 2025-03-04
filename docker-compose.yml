@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: express_server/Dockerfile
+    container_name: mcp-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DOCKER=true
+      - MCP_API_KEY=${MCP_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+    volumes:
+      - ./express_server:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./GongRzhe_Calendar-MCP-Server:/usr/src/GongRzhe_Calendar-MCP-Server
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: mcp-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+      - DOCKER=true
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: mcp-network

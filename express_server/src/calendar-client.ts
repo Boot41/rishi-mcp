@@ -48,12 +48,11 @@ export class CalendarClient {
     }
 
     this.transport = new StdioClientTransport({
-      command: "node",
+      command: "/usr/local/bin/node",
       args: [
-        path.join(
-          __dirname,
-          "../../GongRzhe_Calendar-MCP-Server/build/index.js"
-        ),
+        process.env.DOCKER === "true"
+          ? "/usr/src/GongRzhe_Calendar-MCP-Server/build/index.js"
+          : path.join(__dirname, "../../GongRzhe_Calendar-MCP-Server/build/index.js"),
       ],
       env: {
         GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID!,
