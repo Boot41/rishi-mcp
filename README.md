@@ -6,7 +6,6 @@ The MCP Calendar Integration project is designed to provide seamless integration
 
 ## Features
 
-- User authentication via Google Sign-In
 - Create, read, update, and delete calendar events
 - List events within a specified time range
 - Chat-based interface for user interaction

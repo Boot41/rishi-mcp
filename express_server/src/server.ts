@@ -48,6 +48,50 @@ const startServer = async () => {
   }
 };
 
+// Google OAuth callback route
+app.get("/auth/google/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+
+    if (!code) {
+      return res.status(400).json({ error: "Authorization code is required" });
+    }
+
+    // Exchange the authorization code for tokens
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: "http://localhost:3000/auth/google/callback",
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokens = await tokenResponse.json();
+    console.log("Tokens:", tokens);
+
+    if (tokens.error) {
+      console.error("Error getting tokens:", tokens.error);
+      return res.status(400).json({ error: "Failed to get tokens" });
+    }
+
+    // Store the refresh token securely (you'll need to implement this)
+    // For now, we'll just log it
+    console.log("Refresh token:", tokens.refresh_token);
+
+    // Redirect back to the frontend
+    res.redirect("http://localhost:5173");
+  } catch (error) {
+    console.error("Error in callback:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Calendar routes
 app.use("/calendar", calendarRoutes);
 

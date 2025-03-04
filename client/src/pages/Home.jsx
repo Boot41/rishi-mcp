@@ -6,6 +6,47 @@ const FeatureIcon = ({ icon }) => (
   </div>
 );
 
+const LoginButton = () => {
+  console.log("LoginButton rendered"); // Debug render
+
+  const handleLogin = (e) => {
+    e.preventDefault(); // Prevent any default behavior
+    console.log("Button clicked");
+
+    try {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      console.log("Client ID:", clientId); // Debug client ID
+
+      const redirectUri = "http://localhost:3000/auth/google/callback"; // Updated to Express server port
+      const scope = "https://www.googleapis.com/auth/calendar";
+      const responseType = "code";
+      const accessType = "offline"; // Request offline access
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}&access_type=${accessType}`;
+      console.log("Auth URL:", authUrl);
+
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Error in handleLogin:", error);
+    }
+  };
+
+  // Move the button outside of any other container that might affect it
+  return (
+    <div className="relative z-50">
+      {" "}
+      {/* Ensure button is above other elements */}
+      <button
+        onClick={handleLogin}
+        type="button"
+        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded cursor-pointer"
+      >
+        Login with Google
+      </button>
+    </div>
+  );
+};
+
 export default function Home() {
   const observerRef = useRef(null);
 
@@ -43,6 +84,10 @@ export default function Home() {
           Just chat with TimePilot like you would with a human assistant - it
           handles scheduling, conflicts, and calendar management automatically
         </p>
+        {/* Move LoginButton before the other buttons */}
+        <div className="relative z-50 mb-4">
+          <LoginButton />
+        </div>
         <div className="flex gap-4 animate-fade-in-up">
           <button
             onClick={() => (window.location.href = "#features")}
