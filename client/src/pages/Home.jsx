@@ -34,14 +34,38 @@ const LoginButton = () => {
   // Move the button outside of any other container that might affect it
   return (
     <div className="relative z-50">
-      {" "}
-      {/* Ensure button is above other elements */}
       <button
         onClick={handleLogin}
         type="button"
-        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded cursor-pointer"
+        className="bg-white hover:bg-gray-100 text-black font-medium py-2 px-4 rounded border border-gray-300 shadow-sm transition-colors duration-200 flex items-center gap-2"
+        aria-label="Sign in with Google"
       >
-        Login with Google
+        {/* Inline Google SVG - using the same colorful logo */}
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.66 15.63 16.88 16.85 15.71 17.66V20.34H19.28C21.36 18.42 22.56 15.6 22.56 12.25Z"
+            fill="#4285F4"
+          />
+          <path
+            d="M12 23C15.45 23 18.34 21.76 19.28 20.34L15.71 17.66C14.77 18.34 13.58 18.74 12 18.74C8.66 18.74 5.9 16.58 4.85 13.58H1.18V16.33C2.11 18.61 4.05 20.52 6.45 21.73C8.85 22.94 10.38 23 12 23Z"
+            fill="#34A853"
+          />
+          <path
+            d="M4.85 13.58C4.63 12.91 4.5 12.2 4.5 11.47C4.5 10.74 4.63 10.03 4.85 9.36V6.61H1.18C0.43 8.03 0 9.68 0 11.47C0 13.26 0.43 14.91 1.18 16.33L4.85 13.58Z"
+            fill="#FBBC05"
+          />
+          <path
+            d="M12 5.26C13.71 5.26 15.27 5.87 16.47 7L19.64 3.83C18.34 2.49 15.45 1 12 1C8.85 1 6.45 2.06 4.05 3.27L7.72 6.02C8.9 4.94 10.38 5.26 12 5.26Z"
+            fill="#EA4335"
+          />
+        </svg>
+        <span>Sign in with Google</span>
       </button>
     </div>
   );
@@ -84,25 +108,11 @@ export default function Home() {
           Just chat with TimePilot like you would with a human assistant - it
           handles scheduling, conflicts, and calendar management automatically
         </p>
-        {/* Move LoginButton before the other buttons */}
-        <div className="relative z-50 mb-4">
-          <LoginButton />
-        </div>
         <div className="flex gap-4 animate-fade-in-up">
-          <button
-            onClick={() => (window.location.href = "#features")}
-            className="px-8 py-3 bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
-          >
+          <button className="px-8 py-3 bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors">
             Explore Features
           </button>
-          <button
-            onClick={() =>
-              document.querySelector('[data-page="chat"]')?.click()
-            }
-            className="px-8 py-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Try Now
-          </button>
+          <LoginButton />
         </div>
       </section>
 
