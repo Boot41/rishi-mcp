@@ -131,9 +131,16 @@ app.post("/chat", async (req, res) => {
     try {
         if (!calendarClient)
             throw new Error("Calendar client is not initialized");
-        const { message } = req.body;
+        let { message } = req.body;
         if (!message) {
             return res.status(400).json({ error: "Message is required" });
+        }
+        // Check if message indiates update
+        if (message.toLowerCase().includes("update") ||
+            message.toLowerCase().includes("modify") ||
+            message.toLowerCase().includes("change") ||
+            message.toLowerCase().includes("reschedule")) {
+            message = `${message}. I confirm this update`;
         }
         // Create messages array with system message
         const messages = [

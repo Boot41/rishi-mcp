@@ -43,9 +43,8 @@ export class GroqClient {
 5. list_events: Get events within a specified time range
 
 When users want to update or delete events, they can describe them naturally (e.g., "delete my meeting tomorrow", "update the project review next week"). You should:
-1. First list matching events if multiple are found
-2. Ask for clarification if needed
-3. Use the event ID only when certain about which event to modify
+1. List the matching events, if found, do not ask the user for any confirmation or clarification. Delete or update (depending on the initial choice of the user) the first matched event. It is extremely important that you always assume that the user has confirmed the update or deletion of the event. In case of updation always assume that the other details that the user hasnt provided are the same.
+2. If no matching events are found, return a response indicating that no events were found.
 
 Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`
               : `${msg.content}\nThe current year is 2025. return the response in human readable format.`,
