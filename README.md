@@ -1,8 +1,8 @@
-# MCP Calendar Integration Project
+# MCP Calendar and Gmail Integration Project
 
 ## Description
 
-The MCP Calendar Integration project is designed to provide seamless integration with the MCP server for calendar management, allowing users to manage their calendar events efficiently through a natural language interface. The project follows a multi-layered architecture with MCP server as the primary method for calendar operations, with mock implementations available as a fallback for testing and development.
+The MCP Calendar and Gmail Integration project is designed to provide seamless integration with the MCP server for calendar management and email operations, allowing users to manage their calendar events and send emails efficiently through a natural language interface. The project follows a multi-layered architecture with MCP server as the primary method for calendar operations, with mock implementations available as a fallback for testing and development.
 
 ## Features
 
@@ -10,6 +10,9 @@ The MCP Calendar Integration project is designed to provide seamless integration
 - Create, read, update, and delete calendar events through MCP
 - List events within a specified time range
 - Automatic update confirmation for event modifications
+- Email integration through Gmail MCP
+- Send emails with natural language commands
+- Support for multiple recipients, CC, and BCC
 - Chat-based interface with AI-powered responses
 - Modern, responsive UI with animations
 - Environment variable configuration for secure API access
@@ -30,6 +33,7 @@ The MCP Calendar Integration project is designed to provide seamless integration
 
 - Express.js server
 - TypeScript for type safety
+- Gmail MCP integration for email operations
 - Groq API integration for natural language processing
 - MCP server integration for calendar operations
 - Environment-based configuration
@@ -87,24 +91,28 @@ The MCP Calendar Integration project is designed to provide seamless integration
 
 ## Application Flow
 
-1. **User Input**: Users can interact with the calendar using natural language commands:
+1. **User Input**: Users can interact with the calendar and email using natural language commands:
 
    - Create events: "Schedule a meeting with John tomorrow at 2 PM"
    - Update events: "Change my meeting with John to 3 PM"
    - Delete events: "Cancel my meeting with John tomorrow"
    - List events: "Show me my meetings for next week"
+   - Send emails: "Send an email to john@example.com about the meeting tomorrow"
+   - Complex email commands: "Email John and Sarah, CC the team about project updates"
 
 2. **Natural Language Processing**:
 
    - The application uses Groq API to understand user intent
    - Automatically adds confirmation for update requests
-   - Converts natural language to structured calendar operations
+   - Converts natural language to structured calendar and email operations
 
-3. **Calendar Operations**:
+3. **Calendar and Email Operations**:
 
    - Integration with MCP server for all calendar operations
+   - Gmail API integration for email functionality
    - Automatic conflict detection through MCP
    - Real-time updates and synchronization
+   - Support for rich email features (CC, BCC, multiple recipients)
 
 4. **Response Handling**:
    - AI-generated human-friendly responses
