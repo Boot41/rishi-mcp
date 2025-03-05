@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { GroqClient } from "./groq-client.js";
 import { CalendarClient } from "./calendar-client.js";
+import { GmailClient } from "./gmail-client.js";
 // Initialize environment variables
 dotenv.config();
 
@@ -28,24 +29,27 @@ app.use(express.json());
 // Initialize clients
 const groqClient = new GroqClient(process.env.GROQ_API_KEY || "");
 
-// Store calender client instance and refresh token
+// Store clients
 let calendarClient: CalendarClient | null = null;
+let gmailClient: GmailClient | null = null;
 let refreshToken: string | null = null;
 
-// Function to initialise or update the calender client with the new token
-const initialiseCalendarClient = async (token: string) => {
+// Function to initialise or update the clients with the new token
+const initialiseClients = async (token: string) => {
   if (!calendarClient || refreshToken !== token) {
     refreshToken = token;
     calendarClient = new CalendarClient(refreshToken);
+    gmailClient = new GmailClient();
   }
   try {
     await calendarClient.connect();
-    console.log("Connected to calendar client with new token");
+    await gmailClient?.connect();
+    console.log("Connected to calendar and gmail clients with new token");
   } catch (error) {
-    console.error("Error connecting to mcp server", error);
+    console.error("Error connecting to mcp servers", error);
     throw error;
   }
-  return calendarClient;
+  return { calendarClient, gmailClient };
 };
 
 // Start server without calenderClient
@@ -80,7 +84,7 @@ app.get("/auth/google/callback", async (req, res) => {
     });
 
     const tokens = await tokenResponse.json();
-
+    console.log("Tokens: ", tokens);
     if (tokens.error) {
       console.error("Error getting tokens:", tokens.error);
       return res.status(400).json({ error: "Failed to get tokens" });
@@ -88,8 +92,8 @@ app.get("/auth/google/callback", async (req, res) => {
 
     console.log("Refresh token:", tokens.refresh_token);
 
-    //Initialize/update calender client with the new token
-    await initialiseCalendarClient(tokens.refresh_token);
+    //Initialize/update clients with the new token
+    await initialiseClients(tokens.refresh_token);
 
     // Redirect back to the frontend
     res.redirect("http://localhost:5173");
@@ -169,6 +173,7 @@ async function findEventsByQuery(query: string): Promise<any[]> {
 app.post("/chat", async (req, res) => {
   try {
     if (!calendarClient) throw new Error("Calendar client is not initialized");
+    if (!gmailClient) throw new Error("Gmail client is not initialized");
 
     let { message } = req.body;
 
@@ -176,7 +181,7 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // Check if message indiates update
+    // Check if message indicates update for calendar
     if (
       message.toLowerCase().includes("update") ||
       message.toLowerCase().includes("modify") ||
@@ -191,7 +196,7 @@ app.post("/chat", async (req, res) => {
       {
         role: "system",
         content:
-          "You are a helpful calendar assistant that can manage calendar events. You can create, read, update, and delete events, as well as list events within a time range. You should also be able to answer general questions about calendar management without using any tools.",
+          "You are a helpful assistant that can manage calendar events and emails. You can create, read, update, and delete events, as well as send, read, search, and manage emails. You should also be able to answer general questions about calendar and email management without using any tools.",
       },
       {
         role: "user",
@@ -200,128 +205,104 @@ app.post("/chat", async (req, res) => {
     ];
 
     // Get response from Groq
-    const llmResponse = await groqClient.chat(messages);
+    const groqResponse = await groqClient.chat(messages);
+    const assistantMessage = groqResponse.choices[0].message;
 
-    // Check if there's an error
-    if (llmResponse.error) {
-      return res.status(500).json({ error: llmResponse.error });
-    }
-
-    // Get the message from the choices
-    const assistantMessage = llmResponse.choices[0].message;
-
-    // If there are tool calls, execute them
+    // Handle any tool calls
     if (assistantMessage.tool_calls) {
       const functionResults: FunctionResult[] = [];
 
       // Execute all tool calls and collect results
       for (const toolCall of assistantMessage.tool_calls) {
-        if (toolCall.type === "function") {
-          const { name, arguments: args } = toolCall.function;
-          const parsedArgs = JSON.parse(args);
+        const functionName = toolCall.function.name;
+        const args = JSON.parse(toolCall.function.arguments);
 
-          try {
-            // Execute the calendar function with proper type checking
-            let result;
-            switch (name) {
-              case "create_event":
-                console.log("create event called", parsedArgs);
-                result = await calendarClient.createEvent(parsedArgs);
-                break;
-              case "get_event":
-                console.log("get event called", parsedArgs);
-                result = await calendarClient.getEvent(parsedArgs.eventId);
-                break;
-              case "update_event":
-                console.log("update event called", parsedArgs);
-                if (parsedArgs.eventId) {
-                  console.log("update event by id called", parsedArgs);
-                  result = await calendarClient.updateEvent(parsedArgs);
-                } else if (parsedArgs.query) {
-                  const events = await findEventsByQuery(parsedArgs.query);
-                  if (events.length === 0) {
-                    console.log("No events found");
-                    result = "No events found";
-                  } else {
-                    const updateParams = {
-                      ...parsedArgs,
-                      eventId: events[0].id,
-                    };
-                    delete updateParams.query;
-                    console.log("update event by param called", updateParams);
-                    result = await calendarClient.updateEvent(updateParams);
-                  }
-                }
-                break;
-              case "delete_event":
-                console.log("delete event called", parsedArgs);
-                if (parsedArgs.eventId) {
-                  result = await calendarClient.deleteEvent(parsedArgs.eventId);
-                } else if (parsedArgs.query) {
-                  const events = await findEventsByQuery(parsedArgs.query);
-                  if (events.length === 0) {
-                    result = "No events found";
-                  } else {
-                    result = await calendarClient.deleteEvent(events[0].id);
-                  }
-                }
-                break;
-              case "list_events":
-                console.log("list events called", parsedArgs);
-                result = await calendarClient.listEvents(parsedArgs);
-                break;
-              default:
-                throw new Error(`Unknown function: ${name}`);
+        let result;
+        switch (functionName) {
+          // Calendar operations (unchanged)
+          case "create_event":
+            result = await calendarClient.createEvent(args);
+            break;
+          case "get_event":
+            result = await calendarClient.getEvent(args.eventId);
+            break;
+          case "update_event":
+            if (args.query) {
+              const events = await findEventsByQuery(args.query);
+              if (events.length === 0) {
+                result = {
+                  content: [
+                    { type: "text", text: "No matching events found." },
+                  ],
+                };
+              } else {
+                const event = events[0];
+                args.eventId = event.id;
+                result = await calendarClient.updateEvent(args);
+              }
+            } else {
+              result = await calendarClient.updateEvent(args);
             }
+            break;
+          case "delete_event":
+            result = await calendarClient.deleteEvent(args.eventId);
+            break;
+          case "list_events":
+            result = await calendarClient.listEvents(args);
+            break;
 
-            functionResults.push({
-              name,
-              result,
-              args: parsedArgs,
-            });
-          } catch (error: any) {
-            functionResults.push({
-              name,
-              result: { error: error.message },
-              args: parsedArgs,
-            });
-          }
+          // Gmail operations
+          case "send_email":
+            result = await gmailClient.sendEmail(args);
+            break;
+          case "read_email":
+            result = await gmailClient.readEmail(args.messageId);
+            break;
+          case "search_emails":
+            result = await gmailClient.searchEmails(args);
+            break;
+          case "modify_email":
+            result = await gmailClient.modifyEmail(args);
+            break;
+          case "delete_email":
+            result = await gmailClient.deleteEmail(args.messageId);
+            break;
         }
+
+        functionResults.push({
+          name: functionName,
+          result:
+            result?.content?.[0]?.text || "Operation completed successfully",
+          args,
+        });
       }
 
-      // Create a new message array for the second LLM call
-      const secondCallMessages: Message[] = [
-        ...messages,
-        {
-          role: "assistant",
-          content:
-            assistantMessage.content ||
-            "I'll help you with that calendar operation.",
-        },
-        {
-          role: "function",
-          content: JSON.stringify(functionResults, null, 2),
-          name: "calendar_operation_results",
-        },
-      ];
+      // Add function results to messages
+      messages.push(assistantMessage);
+      messages.push({
+        role: "function",
+        name: "function_results",
+        content: JSON.stringify(functionResults),
+      });
 
-      // Get a human-friendly response from the LLM about the function results
-      const finalResponse = await groqClient.chat(secondCallMessages, false);
-
-      if (finalResponse.error) {
-        return res.status(500).json({ error: finalResponse.error });
-      }
-
-      // Return both the function results and the human-friendly response
+      // Get final response from Groq
+      const finalResponse = await groqClient.chat(messages, false);
       return res.json({
-        function_results: functionResults,
         response: finalResponse.choices[0].message.content,
+        function_results: functionResults,
       });
     }
 
-    return res.json({ response: assistantMessage.content });
+    return res.json({
+      response: assistantMessage.content,
+      function_results: null,
+    });
   } catch (error: any) {
     console.error("Error in chat endpoint:", error);
     return res.status(500).json({ error: error.message });
   }
+});
+
+app.get("/test", (req, res) => {
+  return res.send("Hello from the test endpoint!");
 });

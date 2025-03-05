@@ -12,16 +12,30 @@ export class GroqClient {
                     return {
                         ...msg,
                         content: includeTools
-                            ? `${msg.content}\nThe current year is 2025. You have access to the following calendar functions:
+                            ? `${msg.content}\nThe current year is 2025. You have access to the following functions:
+
+Calendar Functions:
 1. create_event: Create a new calendar event
 2. get_event: Retrieve details of a specific event using its ID
 3. update_event: Update an existing event's details
 4. delete_event: Remove an event from the calendar
 5. list_events: Get events within a specified time range
 
-When users want to update or delete events, they can describe them naturally (e.g., "delete my meeting tomorrow", "update the project review next week"). You should:
+Gmail Functions:
+1. send_email: Send a new email to one or more recipients
+2. read_email: Retrieve the content of a specific email by ID
+3. search_emails: Search emails using Gmail's powerful search syntax
+4. modify_email: Modify email labels (move to different folders)
+5. delete_email: Permanently delete an email
+
+When users want to update or delete calendar events, they can describe them naturally (e.g., "delete my meeting tomorrow", "update the project review next week"). You should:
 1. List the matching events, if found, do not ask the user for any confirmation or clarification. Delete or update (depending on the initial choice of the user) the first matched event. It is extremely important that you always assume that the user has confirmed the update or deletion of the event. In case of updation always assume that the other details that the user hasnt provided are the same.
 2. If no matching events are found, return a response indicating that no events were found.
+
+For Gmail operations:
+1. When searching emails, use Gmail's search syntax (e.g., 'from:example@gmail.com', 'subject:meeting', 'newer_than:2d')
+2. Always format email bodies in a clear, readable format
+3. When modifying emails, use standard Gmail label IDs (e.g., 'INBOX', 'SPAM', 'TRASH')
 
 Always format dates in ISO 8601 format with timezone offset. For example, 2025-03-04T14:00:00+05:30 represents 2 PM IST on March 4th, 2025.`
                             : `${msg.content}\nThe current year is 2025. return the response in human readable format.`,
@@ -31,6 +45,7 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
             });
             const tools = includeTools
                 ? [
+                    // Calendar Tools
                     {
                         type: "function",
                         function: {
@@ -222,6 +237,120 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
                                     },
                                 },
                                 required: ["timeMin", "timeMax"],
+                            },
+                        },
+                    },
+                    // Gmail Tools
+                    {
+                        type: "function",
+                        function: {
+                            name: "send_email",
+                            description: "Sends a new email",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    to: {
+                                        type: "array",
+                                        items: { type: "string" },
+                                        description: "List of recipient email addresses",
+                                    },
+                                    subject: {
+                                        type: "string",
+                                        description: "Email subject",
+                                    },
+                                    body: {
+                                        type: "string",
+                                        description: "Email body content",
+                                    },
+                                    cc: {
+                                        type: "array",
+                                        items: { type: "string" },
+                                        description: "List of CC recipients",
+                                    },
+                                    bcc: {
+                                        type: "array",
+                                        items: { type: "string" },
+                                        description: "List of BCC recipients",
+                                    },
+                                },
+                                required: ["to", "subject", "body"],
+                            },
+                        },
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "read_email",
+                            description: "Retrieves the content of a specific email",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    messageId: {
+                                        type: "string",
+                                        description: "ID of the email message to retrieve",
+                                    },
+                                },
+                                required: ["messageId"],
+                            },
+                        },
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "search_emails",
+                            description: "Searches for emails using Gmail search syntax",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    query: {
+                                        type: "string",
+                                        description: "Gmail search query (e.g., 'from:example@gmail.com')",
+                                    },
+                                    maxResults: {
+                                        type: "number",
+                                        description: "Maximum number of results to return",
+                                    },
+                                },
+                                required: ["query"],
+                            },
+                        },
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "modify_email",
+                            description: "Modifies email labels (move to different folders)",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    messageId: {
+                                        type: "string",
+                                        description: "ID of the email message to modify",
+                                    },
+                                    labelIds: {
+                                        type: "array",
+                                        items: { type: "string" },
+                                        description: "List of label IDs to apply",
+                                    },
+                                },
+                                required: ["messageId", "labelIds"],
+                            },
+                        },
+                    },
+                    {
+                        type: "function",
+                        function: {
+                            name: "delete_email",
+                            description: "Permanently deletes an email",
+                            parameters: {
+                                type: "object",
+                                properties: {
+                                    messageId: {
+                                        type: "string",
+                                        description: "ID of the email message to delete",
+                                    },
+                                },
+                                required: ["messageId"],
                             },
                         },
                     },

@@ -128,8 +128,8 @@ export default function AIChat() {
                   {msg.functionResults.map((result, i) => {
                     if (result.name === "list_events") {
                       const events = JSON.parse(
-                        result.result.content[0].text.substring(
-                          result.result.content[0].text.indexOf("[")
+                        result.result.substring(
+                          result.result.indexOf("[")
                         )
                       );
                       return (
@@ -154,6 +154,73 @@ export default function AIChat() {
                               )}
                             </div>
                           ))}
+                        </div>
+                      );
+                    } else if (result.name === "search_emails" || result.name === "read_email") {
+                      // Extract email information using regex
+                      const emailPattern = /ID:\s+[^\n]+\nSubject:\s+(.*?)\nFrom:\s+(.*?)\nDate:\s+(.*?)(?=\n\n|$)/gs;
+                      const emails = [];
+                      let match;
+                      let content = result.result;
+                      
+                      console.log("Content to parse:", content); // Debug log
+                      
+                      while ((match = emailPattern.exec(content)) !== null) {
+                        console.log("Found match:", match); // Debug log
+                        try {
+                          const date = new Date(match[3].trim());
+                          emails.push({
+                            subject: match[1].trim(),
+                            from: match[2].trim(),
+                            date: date.toLocaleString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: 'numeric',
+                              minute: 'numeric',
+                              hour12: true,
+                              timeZoneName: 'short'
+                            })
+                          });
+                        } catch (error) {
+                          console.error("Error parsing email:", error);
+                        }
+                      }
+
+                      console.log("Parsed emails:", emails); // Debug log
+
+                      if (emails.length === 0) {
+                        return (
+                          <div key={i} className="text-sm text-red-400">
+                            No emails could be parsed. Please check the format.
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={i} className="text-sm space-y-2">
+                          <p className="font-semibold mb-2">
+                            Found {emails.length} emails:
+                          </p>
+                          <div className="grid gap-2">
+                            {emails.map((email, index) => (
+                              <div
+                                key={index}
+                                className="p-3 rounded-lg bg-gray-800/50 border-l-4 border-blue-500"
+                              >
+                                <p className="font-medium text-blue-300 mb-1">{email.subject}</p>
+                                <div className="flex flex-col space-y-1">
+                                  <p className="text-gray-300 text-sm">
+                                    <span className="text-gray-500">From:</span> {email.from}
+                                  </p>
+                                  <p className="text-gray-400 text-sm">
+                                    <span className="text-gray-500">Date:</span> {email.date}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       );
                     }
