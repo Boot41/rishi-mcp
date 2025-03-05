@@ -35,13 +35,13 @@ const LoginButton = () => {
       <button
         onClick={handleLogin}
         type="button"
-        className="bg-white hover:bg-gray-100 text-black font-medium py-2 px-4 rounded border border-gray-300 shadow-sm transition-colors duration-200 flex items-center gap-2"
+        className="bg-white hover:bg-gray-100 text-black font-medium py-2 px-4 rounded-xl border border-gray-300 shadow-sm transition-colors duration-200 flex items-center gap-2"
         aria-label="Sign in with Google"
       >
         {/* Inline Google SVG - using the same colorful logo */}
         <svg
           width="18"
-          height="18"
+          height="29"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
