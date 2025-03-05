@@ -17,10 +17,13 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - GMAIL_OAUTH_PATH=/gcp-oauth.keys.json
+      - GMAIL_CREDENTIALS_PATH=/gmail-server/credentials.json
     volumes:
       - ./express_server:/usr/src/app
       - /usr/src/app/node_modules
       - ./GongRzhe_Calendar-MCP-Server:/usr/src/GongRzhe_Calendar-MCP-Server
+      - ./Gmail-MCP-Server:/usr/src/Gmail-MCP-Server
     restart: unless-stopped
 
   frontend:
