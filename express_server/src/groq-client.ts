@@ -1,13 +1,13 @@
 import axios from "axios";
 
-interface Message {
+export interface Message {
   role: string;
   content: string;
   tool_calls?: any[];
   name?: string;
 }
 
-interface ChatResponse {
+export interface ChatResponse {
   choices: {
     message: Message;
     index: number;
@@ -336,7 +336,8 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
                   properties: {
                     query: {
                       type: "string",
-                      description: "Gmail search query (e.g., 'from:example@gmail.com')",
+                      description:
+                        "Gmail search query (e.g., 'from:example@gmail.com')",
                     },
                     maxResults: {
                       type: "number",
@@ -351,7 +352,8 @@ Always format dates in ISO 8601 format with timezone offset. For example, 2025-0
               type: "function",
               function: {
                 name: "modify_email",
-                description: "Modifies email labels (move to different folders)",
+                description:
+                  "Modifies email labels (move to different folders)",
                 parameters: {
                   type: "object",
                   properties: {
