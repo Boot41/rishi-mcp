@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Demo from "../components/Demo";
 import Stats from "../components/Stats";
 import Footer from "../components/Footer";
 import Features from "../components/Features";
+import { useNavigate } from "react-router-dom";
 
 const LoginButton = () => {
   console.log("LoginButton rendered"); // Debug render
@@ -19,8 +20,9 @@ const LoginButton = () => {
       const scope = "https://www.googleapis.com/auth/calendar";
       const responseType = "code";
       const accessType = "offline"; // Request offline access
+      const prompt = "consent";
 
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}&access_type=${accessType}`;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}&access_type=${accessType}&prompt=${prompt}`;
       console.log("Auth URL:", authUrl);
 
       window.location.href = authUrl;
@@ -71,6 +73,8 @@ const LoginButton = () => {
 
 export default function Home() {
   const observerRef = useRef(null);
+  const [auth, setAuth] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -78,6 +82,7 @@ export default function Home() {
 
     if (refreshTokenFromUrl) {
       localStorage.setItem("refreshToken", refreshTokenFromUrl);
+      setAuth(true);
       // Optionally clear the URL for cleanliness
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
@@ -123,7 +128,16 @@ export default function Home() {
           <button className="px-8 py-3 bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors">
             Explore Features
           </button>
-          <LoginButton />
+          {auth ? (
+            <button
+              onClick={() => navigate("/calendar")}
+              className="px-8 py-3 bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
+            >
+              Calendar
+            </button>
+          ) : (
+            <LoginButton />
+          )}
         </div>
       </section>
 
