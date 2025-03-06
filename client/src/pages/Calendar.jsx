@@ -30,10 +30,25 @@ export default function Calendar() {
     setIsLoading(true);
     setError(null);
     const { start, end } = getMonthRange(selectedDate);
-
+    const token = localStorage.getItem("refreshToken");
+    if (!token) {
+      console.error("No refresh token found");
+      setIsLoading(false);
+      setError("No refresh token found");
+      return;
+    }
     try {
       const response = await fetch(
-        `${API_BASE_URL}/calendar/events?timeMin=${start}&timeMax=${end}`
+        `${API_BASE_URL}/calendar/events?timeMin=${start}&timeMax=${end}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            refreshToken: token,
+          }),
+        }
       );
       if (!response.ok) {
         throw new Error("Failed to fetch events");

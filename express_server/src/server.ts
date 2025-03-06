@@ -29,28 +29,28 @@ app.use(express.json());
 // Initialize clients
 const groqClient = new GroqClient(process.env.GROQ_API_KEY || "");
 
-// Store clients
-let calendarClient: CalendarClient | null = null;
-let gmailClient: GmailClient | null = null;
-let refreshToken: string | null = null;
+// // Store clients
+// let calendarClient: CalendarClient | null = null;
+// let gmailClient: GmailClient | null = null;
+// let refreshToken: string | null = null;
 
-// Function to initialise or update the clients with the new token
-const initialiseClients = async (token: string) => {
-  if (!calendarClient || refreshToken !== token) {
-    refreshToken = token;
-    calendarClient = new CalendarClient(refreshToken);
-    gmailClient = new GmailClient();
-  }
-  try {
-    await calendarClient.connect();
-    await gmailClient?.connect();
-    console.log("Connected to calendar and gmail clients with new token");
-  } catch (error) {
-    console.error("Error connecting to mcp servers", error);
-    throw error;
-  }
-  return { calendarClient, gmailClient };
-};
+// // Function to initialise or update the clients with the new token
+// const initialiseClients = async (token: string) => {
+//   if (!calendarClient || refreshToken !== token) {
+//     refreshToken = token;
+//     calendarClient = new CalendarClient(refreshToken);
+//     gmailClient = new GmailClient();
+//   }
+//   try {
+//     await calendarClient.connect();
+//     await gmailClient?.connect();
+//     console.log("Connected to calendar and gmail clients with new token");
+//   } catch (error) {
+//     console.error("Error connecting to mcp servers", error);
+//     throw error;
+//   }
+//   return { calendarClient, gmailClient };
+// };
 
 // Start server without calenderClient
 const PORT = process.env.PORT || 3000;
@@ -93,10 +93,10 @@ app.get("/auth/google/callback", async (req, res) => {
     console.log("Refresh token:", tokens.refresh_token);
 
     //Initialize/update clients with the new token
-    await initialiseClients(tokens.refresh_token);
+    // await initialiseClients(tokens.refresh_token);
 
     // Redirect back to the frontend
-    res.redirect("http://localhost:5173");
+    res.redirect("http://localhost:5173?token=" + tokens.refresh_token);
   } catch (error) {
     console.error("Error in callback:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -104,7 +104,14 @@ app.get("/auth/google/callback", async (req, res) => {
 });
 
 // Calendar route: List events
-app.get("/calendar/events", async (req, res) => {
+app.post("/calendar/events", async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ error: "Refresh token is required" });
+  }
+  const calendarClient = new CalendarClient(refreshToken);
+  await calendarClient.connect();
+  console.log("Connected to calendar client");
   if (!calendarClient) {
     return res
       .status(401)
@@ -131,15 +138,25 @@ app.get("/calendar/events", async (req, res) => {
     );
     const events = JSON.parse(jsonText);
     res.json(events);
+    calendarClient.close();
+    console.log("Closed calendar client");
   } catch (error) {
+    calendarClient.close();
+    console.log("Closed calendar client");
     console.error("Error fetching calendar events:", error);
     res.status(500).json({ error: "Failed to fetch calendar events" });
   }
 });
 
 // Helper function to get events using query
-async function findEventsByQuery(query: string): Promise<any[]> {
-  if (!calendarClient) throw new Error("Calendar client is not initialized");
+async function findEventsByQuery(query: string, token: string): Promise<any[]> {
+  const calendarClient = new CalendarClient(token);
+  await calendarClient.connect();
+  console.log("Connected to calendar client");
+  if (!calendarClient) {
+    throw new Error("Failed to connect to calendar client");
+  }
+
   const now = new Date();
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   console.log("inside findEventsByQuery", query);
@@ -153,7 +170,8 @@ async function findEventsByQuery(query: string): Promise<any[]> {
     response.content[0].text.substring(response.content[0].text.indexOf("["))
   );
   console.log("events", events);
-
+  calendarClient.close();
+  console.log("Closed calendar client");
   // Search by title, description, or date
   return events.filter((event: any) => {
     const eventDate = new Date(event.start.dateTime);
@@ -172,9 +190,15 @@ async function findEventsByQuery(query: string): Promise<any[]> {
 // Chat endpoint
 app.post("/chat", async (req, res) => {
   try {
-    if (!calendarClient) throw new Error("Calendar client is not initialized");
-    if (!gmailClient) throw new Error("Gmail client is not initialized");
-
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Refresh token is required" });
+    }
+    const calendarClient = new CalendarClient(refreshToken);
+    const gmailClient = new GmailClient();
+    await calendarClient.connect();
+    await gmailClient.connect();
+    console.log("Connected to calendar and gmail clients");
     let { message } = req.body;
 
     if (!message) {
@@ -228,7 +252,7 @@ app.post("/chat", async (req, res) => {
             break;
           case "update_event":
             if (args.query) {
-              const events = await findEventsByQuery(args.query);
+              const events = await findEventsByQuery(args.query, refreshToken);
               if (events.length === 0) {
                 result = {
                   content: [
@@ -284,6 +308,10 @@ app.post("/chat", async (req, res) => {
         name: "function_results",
         content: JSON.stringify(functionResults),
       });
+
+      calendarClient.close();
+      gmailClient.close();
+      console.log("Closed calendar and gmail clients");
 
       // Get final response from Groq
       const finalResponse = await groqClient.chat(messages, false);

@@ -75,10 +75,14 @@ export default function AIChat() {
     setInput("");
 
     try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) {
+        throw new Error("No refresh token found");
+      }
       const response = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input, refreshToken }),
       });
       const data = await response.json();
 
@@ -128,9 +132,7 @@ export default function AIChat() {
                   {msg.functionResults.map((result, i) => {
                     if (result.name === "list_events") {
                       const events = JSON.parse(
-                        result.result.substring(
-                          result.result.indexOf("[")
-                        )
+                        result.result.substring(result.result.indexOf("["))
                       );
                       return (
                         <div key={i} className="text-sm">
@@ -156,15 +158,19 @@ export default function AIChat() {
                           ))}
                         </div>
                       );
-                    } else if (result.name === "search_emails" || result.name === "read_email") {
+                    } else if (
+                      result.name === "search_emails" ||
+                      result.name === "read_email"
+                    ) {
                       // Extract email information using regex
-                      const emailPattern = /ID:\s+[^\n]+\nSubject:\s+(.*?)\nFrom:\s+(.*?)\nDate:\s+(.*?)(?=\n\n|$)/gs;
+                      const emailPattern =
+                        /ID:\s+[^\n]+\nSubject:\s+(.*?)\nFrom:\s+(.*?)\nDate:\s+(.*?)(?=\n\n|$)/gs;
                       const emails = [];
                       let match;
                       let content = result.result;
-                      
+
                       console.log("Content to parse:", content); // Debug log
-                      
+
                       while ((match = emailPattern.exec(content)) !== null) {
                         console.log("Found match:", match); // Debug log
                         try {
@@ -172,16 +178,16 @@ export default function AIChat() {
                           emails.push({
                             subject: match[1].trim(),
                             from: match[2].trim(),
-                            date: date.toLocaleString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: 'numeric',
-                              minute: 'numeric',
+                            date: date.toLocaleString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "numeric",
                               hour12: true,
-                              timeZoneName: 'short'
-                            })
+                              timeZoneName: "short",
+                            }),
                           });
                         } catch (error) {
                           console.error("Error parsing email:", error);
@@ -209,13 +215,17 @@ export default function AIChat() {
                                 key={index}
                                 className="p-3 rounded-lg bg-gray-800/50 border-l-4 border-blue-500"
                               >
-                                <p className="font-medium text-blue-300 mb-1">{email.subject}</p>
+                                <p className="font-medium text-blue-300 mb-1">
+                                  {email.subject}
+                                </p>
                                 <div className="flex flex-col space-y-1">
                                   <p className="text-gray-300 text-sm">
-                                    <span className="text-gray-500">From:</span> {email.from}
+                                    <span className="text-gray-500">From:</span>{" "}
+                                    {email.from}
                                   </p>
                                   <p className="text-gray-400 text-sm">
-                                    <span className="text-gray-500">Date:</span> {email.date}
+                                    <span className="text-gray-500">Date:</span>{" "}
+                                    {email.date}
                                   </p>
                                 </div>
                               </div>

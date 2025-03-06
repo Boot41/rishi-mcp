@@ -73,6 +73,19 @@ export default function Home() {
   const observerRef = useRef(null);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refreshTokenFromUrl = urlParams.get("token"); // Assuming backend sends it in query param
+
+    if (refreshTokenFromUrl) {
+      localStorage.setItem("refreshToken", refreshTokenFromUrl);
+      // Optionally clear the URL for cleanliness
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      console.log("Refresh token not found");
+    }
+  }, []);
+
+  useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
